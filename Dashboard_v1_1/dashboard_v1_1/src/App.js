@@ -41,7 +41,7 @@ function App() {
   }
 
   useEffect(() => {
-    fetch("https://smartwheels-dashboard-backend.onrender.com/api/")
+    fetch("https://smartwheels-dashboard-backend.onrender.com/api")
       .then((res) => res.json())
       .then((data) => setData(data.message));
 

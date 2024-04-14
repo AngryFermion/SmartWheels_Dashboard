@@ -6,12 +6,15 @@ const mqtt = require("mqtt");
 
 const path = require('path');
 
+const cors = require('cors');
 
 
 
 const PORT = process.env.PORT || 3001;
 
 const app = express();
+
+app.use(cors());
 var jsonParser = bodyParser.json()
 var counter = 1;
 

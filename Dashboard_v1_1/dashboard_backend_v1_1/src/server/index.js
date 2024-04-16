@@ -26,13 +26,13 @@ app.use(cors());
 
 // NOTE: Install mongo DB 4.1.0 since latest version has some issue
 // and does not connect to the DB.
-app.listen(DB_PORT,()=>{
+app.listen(PORT,()=>{
   console.log('IN')
   Mongoclient.connect(CONNECION_STRING,(error,client)=>{
     database = client.db(DATABASE_NAME);
     console.log("Mongo DB connection successful\n")
     console.log('Database:', database)
-    //insertData('150')
+    insertData('150')
   })
   
 })
@@ -118,9 +118,9 @@ app.post("/api_send",jsonParser,(req,res)=>{
     MQTT_post(req.body.message)
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server listening on ${PORT}`);
+// });
 
 
 

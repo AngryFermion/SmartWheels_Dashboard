@@ -1,5 +1,12 @@
 const express = require("express");
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
+var Mongoclient = require('mongodb').MongoClient;
+var multer = require('multer');
+
+
+var CONNECION_STRING="mongodb+srv://smartwheels:smartwheels@cluster0.tnjxq72.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+var DATABASE_NAME="Telemetry";
+var database;
 
 
 const mqtt = require("mqtt");
@@ -7,12 +14,43 @@ const mqtt = require("mqtt");
 const path = require('path');
 
 const cors = require('cors');
+const { error } = require("console");
 
 
 
 const PORT = process.env.PORT || 3001;
+const DB_PORT = process.env.PORT || 5038;
 
 const app = express();
+app.use(cors());
+
+// NOTE: Install mongo DB 4.1.0 since latest version has some issue
+// and does not connect to the DB.
+app.listen(DB_PORT,()=>{
+  console.log('IN')
+  Mongoclient.connect(CONNECION_STRING,(error,client)=>{
+    database = client.db(DATABASE_NAME);
+    console.log("Mongo DB connection successful\n")
+    console.log('Database:', database)
+    //insertData('150')
+  })
+  
+})
+
+//
+
+function insertData(val){
+
+  console.log('Inserting new telemetry')
+  database.collection("Telemetrycollection").count({},function(error,numberOfDocs){
+    database.collection("Telemetrycollection").insertOne({
+    id: (numberOfDocs + 1).toString(),
+    telemetryName: "Vehicle Speed",
+    telemetryValue: val
+    })
+
+  });
+}
 
 app.use(cors());
 var jsonParser = bodyParser.json()
@@ -63,6 +101,7 @@ function MQTT_post(message){
 app.get("/api", (req, res) => {
     counter = counter + 1
     res.json({ message: dataFromServer });
+    insertData(dataFromServer)
     
 
     

@@ -161,12 +161,14 @@ var fota_cmd = '';
 var Topic_UpdateMaster = 'UpdateMaster';
 var file_line_number = 0;
 var writeStart = 0;
+var ping = 0;
 var test_buffer_type = Buffer.from("S0");
 var test_buffer_BMS_command = [];
 const CmdStartFirmwareWrite = '0x00000007';
 const CmdJumpToApp  = '0x00000008';
 const CmdJumpToBootloader = '0x00000006';
 const CmdDelBmsError = '0x0000EE00';
+const CmdFetchDeviceFirmware = '0x0000FF00';
 const CmdClearDTC = '0x00000D00' // Cell_max_Vltg -> Ble_Fsm.c Ble_PackBmsData()
 var client = mqtt.connect('mqtt://broker.emqx.io');
 
@@ -267,6 +269,12 @@ function MQTT_post(message,topic){
             }
             else if(payload.toString() == "69"){
               console.log('Write FAILED.\n');
+
+            }
+            else if(payload.toString() == "0.0.0.0"){
+
+              console.log('Device Active...');
+              ping = 1
 
             }
             break;
@@ -620,11 +628,45 @@ app.post("/StartUpdate",jsonParser,(req,res)=>{
   console.log('ENDPOINT HIT:',req.body.message);
   res.send("Firmware Update Started...");
   console.log('\n starting software update...');
- StartUpdate_MQTT();
+  StartUpdate_MQTT();
 
  // setInterval(()=>MQTT_post('Hello',Topic_UpdateMaster),2000);
   
 });
+
+
+function PingDevice(){
+  fota_cmd = packCommand(CmdFetchDeviceFirmware);
+  var Message = '';
+  Message = test_buffer_BMS_command;
+  var i=0;
+  while (i<5){
+    console.log('MQTT Sending Command: ',Message.toString());
+
+    MQTT_post(Message.toString(),Topic_UpdateMaster);
+    i = i + 1
+  }
+  test_buffer_BMS_command = [];
+
+  
+
+}
+
+// Endpoint to ping the S32K144 Smartwheel device.
+
+app.post("/PingDevice",jsonParser,(req,res)=>{
+
+  PingDevice();
+
+  if (ping == 1){
+    res.send('Device Ready');
+  }
+  else{
+    res.send('Device Inactive');
+  }
+});
+
+
 
 // app.listen(PORT, () => {
 //   console.log(`Server listening on ${PORT}`);

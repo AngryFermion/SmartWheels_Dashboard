@@ -660,9 +660,11 @@ app.post("/PingDevice",jsonParser,(req,res)=>{
 
   if (ping == 1){
     res.send('Device Ready');
+    ping = 0;
   }
   else{
     res.send('Device Inactive');
+    
   }
 });
 

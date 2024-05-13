@@ -582,13 +582,68 @@ const StartUpdate=(linenumber,topic)=>{
      var UpdateMessage = '';
      
      packCommand(fota_cmd)
-     UpdateMessage = test_buffer_BMS_command + test_buffer_type + test_buffer_data;
+
+      var j = 0;
+     console.log('')
+     while(j< test_buffer_BMS_command.length){
+      UpdateMessage += test_buffer_BMS_command[j];
+      j=j+1
+     }
+    UpdateMessage = UpdateMessage + test_buffer_type;
+     
+     //UpdateMessage = test_buffer_BMS_command ;//+ test_buffer_type; //+ test_buffer_data;
+    
 
      test_buffer_BMS_command = [];
-     test_buffer_data = [];
+     
      console.log('Line ',linenumber,' message:',UpdateMessage);
+     //console.log('Size of Update message : ',(UpdateMessage.length));
 
      MQTT_post(UpdateMessage,Topic_UpdateMaster);
+
+
+     
+     var k = 0;
+
+     while (k<7){
+
+      j = 0
+      if(k != 6){
+        while(j< 20){
+      
+          console.log(String.fromCharCode((test_buffer_data[j + k*(20)])));
+          UpdateMessage += test_buffer_data[String.fromCharCode((test_buffer_data[j + k*(20)]))];//test_buffer_data[j + k*(20)];
+          j = j+1
+
+
+         }
+         
+      }
+      else{
+
+        while(j< 14){
+      
+          console.log(String.fromCharCode((test_buffer_data[j + k*(20)])));
+          UpdateMessage += test_buffer_data[String.fromCharCode((test_buffer_data[j + k*(20)]))];//test_buffer_data[j + k*(20)];
+          j = j+1
+
+
+         }
+
+
+
+      }
+
+      k = k + 1;
+
+      MQTT_post(UpdateMessage,Topic_UpdateMaster);
+      UpdateMessage = ''
+
+     }
+     
+
+
+     test_buffer_data = [];
    
  }
 

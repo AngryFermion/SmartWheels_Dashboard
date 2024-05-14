@@ -159,6 +159,7 @@ var file_index = 0;
 var file_row_index = 0;
 var fota_cmd = '';
 var Topic_UpdateMaster = 'UpdateMaster';
+var Topic_PingSmartWheels = 'PingSmartWheels';
 var file_line_number = 0;
 var writeStart = 0;
 var ping = 0;
@@ -244,6 +245,7 @@ function MQTT_post(message,topic){
     data = []
     UpdateTopic = 'UpdateSlave';
     TelemetryTopic = 'BobToAlice';
+    SubTopic_PingDevice = "SmartWheels_Heartbeat"
     console.log('Subscribing...\n')
     client.subscribe(UpdateTopic, () => {
         console.log(`Subscribe to topic '${UpdateTopic}'`)
@@ -254,20 +256,25 @@ function MQTT_post(message,topic){
         console.log(`Subscribe to topic '${TelemetryTopic}'`)
       })
 
+      client.subscribe(SubTopic_PingDevice, () => {
+        console.log(`Subscribe to topic '${SubTopic_PingDevice}'`)
+      })
+
+
       client.on('message', (Topic, payload) => {
         console.log('Received Message:',Topic)
 
         switch(Topic){
           case "UpdateSlave":
             console.log("Message received from Dummy ESP32:",payload.toString())
-            if(payload.toString() == "65"){
+            if(payload.toString() == "A"){
               console.log('Write OK. Sending Next line\n');
               
               file_line_number = file_line_number + 1
               StartUpdate(file_line_number);
               //MQTT_post('Hello',Topic_UpdateMaster);
             }
-            else if(payload.toString() == "69"){
+            else if(payload.toString() == "E"){
               console.log('Write FAILED.\n');
 
             }
@@ -280,6 +287,12 @@ function MQTT_post(message,topic){
             break;
           case "BobToAlice":
             dataFromServer = payload.toString();
+            break;
+
+          case "SmartWheels_Heartbeat":
+            // setting ping to 1 
+
+            ping = 1;
             break;
           default:
             break;
@@ -579,20 +592,21 @@ const StartUpdate=(linenumber,topic)=>{
 
      // Send lines and receive the error code
 
-     var UpdateMessage = '';
+     var UpdateMessage = [];
      
      packCommand(fota_cmd)
 
-      var j = 0;
-     console.log('')
-     while(j< test_buffer_BMS_command.length){
-      UpdateMessage += test_buffer_BMS_command[j];
-      j=j+1
-     }
-    UpdateMessage = UpdateMessage + test_buffer_type;
+    //   var j = 0;
+    //  console.log('')
+    //  while(j< test_buffer_BMS_command.length){
+    //   UpdateMessage += test_buffer_BMS_command[j];
+    //   j=j+1
+    //  }
+    // UpdateMessage = UpdateMessage + test_buffer_type;
      
-     //UpdateMessage = test_buffer_BMS_command ;//+ test_buffer_type; //+ test_buffer_data;
+     //UpdateMessage = test_buffer_BMS_command /*+ test_buffer_type*/ + test_buffer_data;
     
+     UpdateMessage = Buffer.from(test_buffer_BMS_command);
 
      test_buffer_BMS_command = [];
      
@@ -601,10 +615,16 @@ const StartUpdate=(linenumber,topic)=>{
 
      MQTT_post(UpdateMessage,Topic_UpdateMaster);
 
+     UpdateMessage = [];
+
+     UpdateMessage = test_buffer_type;
+
+     MQTT_post(UpdateMessage,Topic_UpdateMaster);
+
 
      
      var k = 0;
-
+     var temp_test_buffer_data = []
      while (k<7){
 
       j = 0
@@ -612,7 +632,7 @@ const StartUpdate=(linenumber,topic)=>{
         while(j< 20){
       
           console.log(String.fromCharCode((test_buffer_data[j + k*(20)])));
-          UpdateMessage += test_buffer_data[String.fromCharCode((test_buffer_data[j + k*(20)]))];//test_buffer_data[j + k*(20)];
+          temp_test_buffer_data[j] = (test_buffer_data[j + k*(20)]);
           j = j+1
 
 
@@ -624,7 +644,7 @@ const StartUpdate=(linenumber,topic)=>{
         while(j< 14){
       
           console.log(String.fromCharCode((test_buffer_data[j + k*(20)])));
-          UpdateMessage += test_buffer_data[String.fromCharCode((test_buffer_data[j + k*(20)]))];//test_buffer_data[j + k*(20)];
+          temp_test_buffer_data[j] = (test_buffer_data[j + k*(20)]);
           j = j+1
 
 
@@ -635,9 +655,10 @@ const StartUpdate=(linenumber,topic)=>{
       }
 
       k = k + 1;
-
+      UpdateMessage = Buffer.from(temp_test_buffer_data);
       MQTT_post(UpdateMessage,Topic_UpdateMaster);
-      UpdateMessage = ''
+      UpdateMessage = []
+      temp_test_buffer_data = [];
 
      }
      
@@ -698,7 +719,7 @@ function PingDevice(){
   while (i<5){
     console.log('MQTT Sending Command: ',Message.toString());
 
-    MQTT_post(Message.toString(),Topic_UpdateMaster);
+    MQTT_post(Message.toString(),Topic_PingSmartWheels);
     i = i + 1
   }
   test_buffer_BMS_command = [];
